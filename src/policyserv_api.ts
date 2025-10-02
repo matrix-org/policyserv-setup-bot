@@ -19,7 +19,7 @@ export class PolicyservApi {
         });
         if (req.status !== 200) {
             const body = await req.text();
-            throw new Error(`Request failed with status ${req.status}: ${body}`);
+            throw new Error(`Request (${path}) failed with status ${req.status}: ${body}`);
         }
         return await req.json();
     }
