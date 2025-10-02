@@ -1,0 +1,29 @@
+{
+  "name": "policyserv-setup-bot",
+  "version": "0.0.1",
+  "description": "Bot for setting up policyserv",
+  "homepage": "https://github.com/matrix-org/policyserv-setup-bot#readme",
+  "bugs": {
+    "url": "https://github.com/matrix-org/policyserv-setup-bot/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/matrix-org/policyserv-setup-bot.git"
+  },
+  "license": "Apache-2.0",
+  "author": "The Matrix.org Foundation C.I.C.",
+  "type": "commonjs",
+  "main": "lib/index.js",
+  "scripts": {
+    "start": "npx tsx src/index.ts"
+  },
+  "devDependencies": {
+    "@types/escape-html": "^1.0.4",
+    "@types/node": "^24.6.2",
+    "tsx": "^4.20.6"
+  },
+  "dependencies": {
+    "@vector-im/matrix-bot-sdk": "^0.7.1-element.14",
+    "escape-html": "^1.0.3"
+  }
+}
