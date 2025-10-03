@@ -108,8 +108,7 @@ const policyservApi = new PolicyservApi(policyservBaseUrl, policyservApiKey);
 
             try {
                 // Actually approve the room
-                // await policyservApi.addRoom(policyservData["room_id"], policyservData["community_id"]);
-                await policyservApi.addRoom("!EqwjXrbedwInPOtMiv:t2l.io", policyservData["community_id"]);
+                await policyservApi.addRoom(policyservData["room_id"], policyservData["community_id"]);
 
                 // Send the notice
                 await client.sendHtmlNotice(policyservData["community_room_id"], `The application for the room <code>${escapeHtml(policyservData["room_id"])}</code> to join this community has been <b>approved</b>! The room will now be protected by policyserv.`);
