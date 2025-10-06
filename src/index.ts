@@ -6,7 +6,7 @@ import {
     SimpleFsStorageProvider, TextualMessageEventContent
 } from "@vector-im/matrix-bot-sdk";
 import * as path from "node:path";
-import {PolicyservApi} from "./policyserv_api";
+import {CommunityConfig, ConfigDescriptions, PolicyservApi} from "./policyserv_api";
 
 const escapeHtml = require("escape-html");
 
@@ -149,6 +149,9 @@ const policyservApi = new PolicyservApi(policyservBaseUrl, policyservApiKey);
                     "All commands require a community to exist first. To do so, say <code>!policyserv community &lt;community name&gt;</code>.<br/>" +
                     "Afterwards, the following commands will be available:<br/><ul>" +
                     "<li><code>!policyserv apply &lt;room ID or alias&gt;</code> - Sends an application to the safety team to add the room to the community.</li>" +
+                    "<li><code>!policyserv config</code> - Get the current configuration for the community.</li>" +
+                    "<li><code>!policyserv get &lt;config key&gt;</code> - Get a specific configuration value.</li>" +
+                    "<li><code>!policyserv set &lt;config key&gt; &lt;value&gt;</code> - Set a configuration value.</li>" +
                     "</ul>"
                 );
             } else if (args[0] === "community") {
@@ -268,6 +271,57 @@ const policyservApi = new PolicyservApi(policyservBaseUrl, policyservApiKey);
                         client.redactEvent(roomId, reactionEventId);
                         await client.replyHtmlNotice(roomId, event, "❌ Failed to submit application for the room to join the community. Ensure the bot can join and try again later.");
                     }
+                } else if (args[0] === "config" || args[0] === "get") {
+                    const reactionEventId = await client.unstableApis.addReactionToEvent(roomId, event.event_id, "👀");
+                    const community = await policyservApi.getCommunity(communityConfig.id);
+                    const instanceConfig = await policyservApi.getInstanceCommunityConfig();
+                    let keys = Object.keys(instanceConfig); // we use the instance config to ensure we show all available options to the user
+                    if (args[0] === "get") {
+                        if (!ConfigDescriptions[args[1]]) {
+                            // noinspection ES6MissingAwait - we aren't concerned if this fails
+                            client.redactEvent(roomId, reactionEventId);
+                            await client.replyHtmlNotice(roomId, event, "❌ Unknown configuration key. Say <code>!policyserv config</code> for a list of available keys and their values.");
+                            return;
+                        }
+                        keys = [ConfigDescriptions[args[1]].property];
+                    }
+                    let html = `<b>Note:</b> Instance defaults may change at any time without notice. Set specific values to override these defaults.<br/><br/>`;
+                    for (const key of keys) {
+                        html += renderConfigVal(key as keyof CommunityConfig, community.config, instanceConfig);
+                    }
+                    // noinspection ES6MissingAwait - we aren't concerned if this fails
+                    client.redactEvent(roomId, reactionEventId);
+                    await client.replyHtmlNotice(roomId, event, html);
+                } else if (args[0] === "set") {
+                    const key = args[1];
+                    let val: any = args.slice(2).join(" ");
+                    const desc = ConfigDescriptions[key];
+                    if (!desc) {
+                        await client.replyHtmlNotice(roomId, event, "❌ Unknown configuration key. Say <code>!policyserv config</code> for a list of available keys and their values.");
+                        return;
+                    }
+                    const reactionEventId = await client.unstableApis.addReactionToEvent(roomId, event.event_id, "👀");
+                    try {
+                        if (!!desc.transformFn) {
+                            val = desc.transformFn(val);
+                        }
+                        const currentConfig = (await policyservApi.getCommunity(communityConfig.id)).config;
+                        // @ts-ignore - TS doesn't know that the key exists
+                        currentConfig[desc.property] = val;
+                        await policyservApi.setCommunityConfig(communityConfig.id, currentConfig)
+                    } catch (e) {
+                        console.error(e);
+                        // noinspection ES6MissingAwait - we aren't concerned if this fails
+                        client.redactEvent(roomId, reactionEventId);
+                        await client.replyHtmlNotice(roomId, event, "❌ There was an error saving your configuration. Please verify that the value is of the correct type or try again later.");
+                        return;
+                    }
+                    // noinspection ES6MissingAwait - we aren't concerned if this fails
+                    client.redactEvent(roomId, reactionEventId);
+                    await client.replyHtmlNotice(roomId, event, "✅ Configuration saved! It may take a few minutes for the changes to take effect.");
+                } else {
+                    await client.replyHtmlNotice(roomId, event, "❌ Unknown command. Say <code>!policyserv help</code> for a list of available commands.");
+                    return;
                 }
             }
         }
@@ -277,5 +331,12 @@ const policyservApi = new PolicyservApi(policyservBaseUrl, policyservApiKey);
     console.log("Started!");
 })();
 
+function renderConfigVal(key: keyof CommunityConfig, vals: CommunityConfig, defaults: CommunityConfig): string {
+    const [name, description] = Object.entries(ConfigDescriptions).find(([name, desc]) => desc.property === key) ?? [null, null];
+    if (!name) {
+        return ""; // unrenderable, or at least not something we expect to show to the user
+    }
 
-
+    // Ideally we'd use a table, but not all clients support that :(
+    return `<b><code>${name}</code></b>: ${vals[key] != undefined ? `<code>${escapeHtml(vals[key])}</code>` : "use instance default"}<br/>Instance default: ${defaults[key] != undefined ? `<code>${escapeHtml(defaults[key])}</code>` : "not set (disabled)"}<br/><i>${description.description}</i><br/><br/>`;
+}
