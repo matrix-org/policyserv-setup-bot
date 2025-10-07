@@ -129,6 +129,7 @@ const policyservApi = new PolicyservApi(policyservBaseUrl, policyservApiKey);
         }
     });
 
+    const commandPrefixes = ["!policyserv", "!ps"];
     client.on("room.message", async (roomId: string, event: any) => {
         if (event.sender === await client.getUserId()) {
             return; // ignore ourselves
@@ -142,8 +143,9 @@ const policyservApi = new PolicyservApi(policyservBaseUrl, policyservApiKey);
         }
 
         try {
-            if (textEvent.content.body.toLowerCase().startsWith("!policyserv ")) {
-                const args = textEvent.content.body.substring("!policyserv ".length).split(" ");
+            const prefixUsed = commandPrefixes.find(p => textEvent.content.body.toLowerCase().startsWith(p));
+            if (!!prefixUsed) {
+                const args = textEvent.content.body.substring(prefixUsed.length).trim().split(" ");
                 if (args[0] === "help") {
                     await client.replyHtmlNotice(roomId, event,
                         "This bot is used to manage a community's policyserv settings. <br/>" +
