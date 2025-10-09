@@ -9,6 +9,7 @@ import * as path from "node:path";
 import {CommunityConfig, ConfigDescriptions, PolicyservApi} from "./policyserv_api";
 import {RateLimit} from "./rate_limit";
 import escapeHtml from "escape-html";
+import * as http from "node:http";
 
 const userId = process.env.USER_ID;
 const password = process.env.PASSWORD;
@@ -23,6 +24,7 @@ const communityRateLimitWindowMs = Number(process.env.COMMUNITY_RATE_LIMIT_WINDO
 const communityRateLimitMax = Number(process.env.COMMUNITY_RATE_LIMIT_MAX) || 10;
 const userRateLimitWindowMs = Number(process.env.USER_RATE_LIMIT_WINDOW_MS) || 10 * 60 * 1000; // 10min default
 const userRateLimitMax = Number(process.env.USER_RATE_LIMIT_MAX) || 10;
+const healthzBind = process.env.HEALTHZ_BIND || "0.0.0.0:8080";
 
 function requireVariable(v: string | undefined, name: string): void {
     if (!v) {
@@ -361,6 +363,18 @@ const userLimiter = new RateLimit(userRateLimitWindowMs, userRateLimitMax);
     });
 
     await client.start();
+
+    // Start healthz server after the client has started, to ensure deployment systems don't consider it up prematurely
+    const server = http.createServer(async (req, res) => {
+        res.statusCode = 200;
+        res.setHeader("Content-Type", "text/plain");
+        res.end("OK\n");
+    });
+    const bindParts = healthzBind.split(":");
+    server.listen(Number(bindParts[1]), bindParts[0], () => {
+        console.log(`Healthz server listening on ${healthzBind}`);
+    });
+
     console.log("Started!");
 })();
 
