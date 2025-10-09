@@ -163,7 +163,7 @@ const userLimiter = new RateLimit(userRateLimitWindowMs, userRateLimitMax);
                 if (communityLimited || userLimited) {
                     console.log(`Rate limited ${roomId} / ${event.sender} | community: ${communityLimited} (egregious: ${communityEgregious}), user: ${userLimited} (egregious: ${userEgregious})`);
                     if (!communityEgregious && !userEgregious) {
-                        await client.replyHtmlNotice(roomId, event, "❌ This command is not available at the moment. Please try again later.");
+                        await client.replyHtmlNotice(roomId, event, "❌ This command is rate limited. Please try again later.");
                     }
                     return;
                 }
