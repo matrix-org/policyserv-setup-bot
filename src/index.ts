@@ -152,6 +152,8 @@ const userLimiter = new RateLimit(userRateLimitWindowMs, userRateLimitMax);
         try {
             const prefixUsed = commandPrefixes.find(p => textEvent.content.body.toLowerCase().startsWith(p));
             if (!!prefixUsed) {
+                console.log(`Command by ${event.sender} in ${roomId}: ${textEvent.content.body}`);
+
                 // Check rate limits before continuing. Note that the "community" rate limit actually applies to the room,
                 // regardless of whether a community is actually configured. We also check both rate limiters at the same
                 // time to ensure both count the request properly. We intentionally rate limit even the help command and
