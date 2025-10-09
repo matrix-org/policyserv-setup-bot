@@ -8,8 +8,8 @@ import {
 import * as path from "node:path";
 import {CommunityConfig, ConfigDescriptions, PolicyservApi} from "./policyserv_api";
 import {RateLimit} from "./rate_limit";
-
-const escapeHtml = require("escape-html");
+import escapeHtml from "escape-html";
+import * as http from "node:http";
 
 const userId = process.env.USER_ID;
 const password = process.env.PASSWORD;
@@ -24,6 +24,7 @@ const communityRateLimitWindowMs = Number(process.env.COMMUNITY_RATE_LIMIT_WINDO
 const communityRateLimitMax = Number(process.env.COMMUNITY_RATE_LIMIT_MAX) || 10;
 const userRateLimitWindowMs = Number(process.env.USER_RATE_LIMIT_WINDOW_MS) || 10 * 60 * 1000; // 10min default
 const userRateLimitMax = Number(process.env.USER_RATE_LIMIT_MAX) || 10;
+const healthzBind = process.env.HEALTHZ_BIND || "0.0.0.0:8080";
 
 function requireVariable(v: string | undefined, name: string): void {
     if (!v) {
@@ -153,6 +154,8 @@ const userLimiter = new RateLimit(userRateLimitWindowMs, userRateLimitMax);
         try {
             const prefixUsed = commandPrefixes.find(p => textEvent.content.body.toLowerCase().startsWith(p));
             if (!!prefixUsed) {
+                console.log(`Command by ${event.sender} in ${roomId}: ${textEvent.content.body}`);
+
                 // Check rate limits before continuing. Note that the "community" rate limit actually applies to the room,
                 // regardless of whether a community is actually configured. We also check both rate limiters at the same
                 // time to ensure both count the request properly. We intentionally rate limit even the help command and
@@ -267,8 +270,8 @@ const userLimiter = new RateLimit(userRateLimitWindowMs, userRateLimitMax);
 
                             // Prepare an application
                             const community = await policyservApi.getCommunity(communityConfig.id);
-                            const roomName = state.find(e => e.type === "m.room.name" && e.state_key === "")?.content?.name ?? "__UNNAMED ROOM__";
-                            const roomTopic = state.find(e => e.type === "m.room.topic" && e.state_key === "")?.content?.topic ?? "__NO TOPIC__";
+                            const roomName = state.find(e => e.type === "m.room.name" && e.state_key === "")?.content?.name as string ?? "__UNNAMED ROOM__";
+                            const roomTopic = state.find(e => e.type === "m.room.topic" && e.state_key === "")?.content?.topic as string ?? "__NO TOPIC__";
                             const noticeEventId = await client.sendMessage(safetyTeamRoomId, {
                                 msgtype: "m.notice",
                                 body: `A new application has been submitted by \`${event.sender}\` for the room \`${joinRoomId}\` to join the community "${community.name}" (\`${communityConfig.id}\`). React with ✅ to approve and ❌ to deny.\n\nDetails:\n* Name: ${roomName}\n* Topic: ${roomTopic}`,
@@ -360,6 +363,18 @@ const userLimiter = new RateLimit(userRateLimitWindowMs, userRateLimitMax);
     });
 
     await client.start();
+
+    // Start healthz server after the client has started, to ensure deployment systems don't consider it up prematurely
+    const server = http.createServer(async (req, res) => {
+        res.statusCode = 200;
+        res.setHeader("Content-Type", "text/plain");
+        res.end("OK\n");
+    });
+    const bindParts = healthzBind.split(":");
+    server.listen(Number(bindParts[1]), bindParts[0], () => {
+        console.log(`Healthz server listening on ${healthzBind}`);
+    });
+
     console.log("Started!");
 })();
 
@@ -370,5 +385,5 @@ function renderConfigVal(key: keyof CommunityConfig, vals: CommunityConfig, defa
     }
 
     // Ideally we'd use a table, but not all clients support that :(
-    return `<b><code>${name}</code></b>: ${vals[key] != undefined ? `<code>${escapeHtml(vals[key])}</code>` : "use instance default"}<br/>Instance default: ${defaults[key] != undefined ? `<code>${escapeHtml(defaults[key])}</code>` : "not set (disabled)"}<br/><i>${description.description}</i><br/><br/>`;
+    return `<b><code>${name}</code></b>: ${vals[key] != undefined ? `<code>${escapeHtml(`${vals[key]}`)}</code>` : "use instance default"}<br/>Instance default: ${defaults[key] != undefined ? `<code>${escapeHtml(`${defaults[key]}`)}</code>` : "not set (disabled)"}<br/><i>${description.description}</i><br/><br/>`;
 }
