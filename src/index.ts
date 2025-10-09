@@ -329,8 +329,9 @@ const policyservApi = new PolicyservApi(policyservBaseUrl, policyservApiKey);
                 }
             }
         } catch (e) {
-            console.error(e);
-            await client.replyHtmlNotice(roomId, event, "❌ There was an error processing your command. Please try again later.");
+            const ref = `REF:${Date.now()}`;
+            console.error(ref, e);
+            await client.replyHtmlNotice(roomId, event, `❌ There was an error processing your command. Please try again later. If the error persists, please provide ${ref} to the safety team.`);
             return;
         }
     });
