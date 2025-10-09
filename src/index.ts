@@ -7,6 +7,7 @@ import {
 } from "@vector-im/matrix-bot-sdk";
 import * as path from "node:path";
 import {CommunityConfig, ConfigDescriptions, PolicyservApi} from "./policyserv_api";
+import {RateLimit} from "./rate_limit";
 
 const escapeHtml = require("escape-html");
 
@@ -19,6 +20,10 @@ const policyservBaseUrl = process.env.POLICYSERV_BASE_URL;
 const policyservApiKey = process.env.POLICYSERV_API_KEY;
 const policyservServerName = process.env.POLICYSERV_SERVER_NAME;
 const appealDirections = process.env.APPEAL_DIRECTIONS || "To appeal this decision, please email abuse@matrix.org";
+const communityRateLimitWindowMs = Number(process.env.COMMUNITY_RATE_LIMIT_WINDOW_MS) || 10 * 60 * 1000; // 10min default
+const communityRateLimitMax = Number(process.env.COMMUNITY_RATE_LIMIT_MAX) || 10;
+const userRateLimitWindowMs = Number(process.env.USER_RATE_LIMIT_WINDOW_MS) || 10 * 60 * 1000; // 10min default
+const userRateLimitMax = Number(process.env.USER_RATE_LIMIT_MAX) || 10;
 
 function requireVariable(v: string | undefined, name: string): void {
     if (!v) {
@@ -36,6 +41,9 @@ requireVariable(policyservApiKey, "POLICYSERV_API_KEY");
 requireVariable(policyservServerName, "POLICYSERV_SERVER_NAME");
 
 const policyservApi = new PolicyservApi(policyservBaseUrl, policyservApiKey);
+
+const communityLimiter = new RateLimit(communityRateLimitWindowMs, communityRateLimitMax);
+const userLimiter = new RateLimit(userRateLimitWindowMs, userRateLimitMax);
 
 (async () => {
     // Log in to get a fresh access token/device ID if we haven't already
@@ -145,6 +153,21 @@ const policyservApi = new PolicyservApi(policyservBaseUrl, policyservApiKey);
         try {
             const prefixUsed = commandPrefixes.find(p => textEvent.content.body.toLowerCase().startsWith(p));
             if (!!prefixUsed) {
+                // Check rate limits before continuing. Note that the "community" rate limit actually applies to the room,
+                // regardless of whether a community is actually configured. We also check both rate limiters at the same
+                // time to ensure both count the request properly. We intentionally rate limit even the help command and
+                // invalid commands because our user ID might still be subject to rate limits itself, and we don't want
+                // to exceed those.
+                const [communityLimited, communityEgregious] = [communityLimiter.isLimited(roomId), communityLimiter.isEgregiousLimit(roomId)];
+                const [userLimited, userEgregious] = [userLimiter.isLimited(event.sender), userLimiter.isEgregiousLimit(event.sender)];
+                if (communityLimited || userLimited) {
+                    console.log(`Rate limited ${roomId} / ${event.sender} | community: ${communityLimited} (egregious: ${communityEgregious}), user: ${userLimited} (egregious: ${userEgregious})`);
+                    if (!communityEgregious && !userEgregious) {
+                        await client.replyHtmlNotice(roomId, event, "❌ This command is rate limited. Please try again later.");
+                    }
+                    return;
+                }
+
                 const args = textEvent.content.body.substring(prefixUsed.length).trim().split(" ");
                 if (args[0] === "help") {
                     await client.replyHtmlNotice(roomId, event,
