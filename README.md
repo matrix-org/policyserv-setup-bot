@@ -7,13 +7,27 @@ A bot to set up communities with policyserv.
 
 ## Usage
 
-TODO: Instructions on how to use the Foundation's bot (when available).
+To set up your community on the Foundation's instance:
+
+1. Create a **private** (preferably **encrypted**) room. This will become your community's management room - anyone in the room can run commands.
+2. Invite `@policyserv:matrix.org` to that room.
+3. Say `!policyserv community YOUR_COMMUNITY_NAME` in that room.
+4. For each of the rooms you want to have protected under this community, say `!policyserv apply <room ID or alias>`
+5. The Foundation's T&S team will review the request and either approve or deny it. At this stage, it's recommended to give `@policyserv:matrix.org` "Moderator" permissions in the room so it can set up the policy server for you, if/when approved.
+6. At any time, you can say `!policyserv config` to see the community's configuration, and `!policyserv set <config key> <value>` to change it.
+
+For further information, say `!policyserv help` in your community's management room.
+
+<!-- dev note: we don't link to specific emails here to avoid (further) spam from internet crawlers -->
+Issues with `@policyserv:matrix.org` should be reported to the abuse contact at https://matrix.org/contact/ - please *do not* email support.
 
 ## Install
 
+*This is intended for development only.*
+
 1. Clone the repo and install the latest NodeJS LTS if you haven't already.
 2. `npm install`
-3. `npm start`
+3. `npm start` (with the appropriate environment variables set - see Docker below for examples)
 
 ## Docker
 
