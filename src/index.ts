@@ -8,8 +8,7 @@ import {
 import * as path from "node:path";
 import {CommunityConfig, ConfigDescriptions, PolicyservApi} from "./policyserv_api";
 import {RateLimit} from "./rate_limit";
-
-const escapeHtml = require("escape-html");
+import escapeHtml from "escape-html";
 
 const userId = process.env.USER_ID;
 const password = process.env.PASSWORD;
@@ -267,8 +266,8 @@ const userLimiter = new RateLimit(userRateLimitWindowMs, userRateLimitMax);
 
                             // Prepare an application
                             const community = await policyservApi.getCommunity(communityConfig.id);
-                            const roomName = state.find(e => e.type === "m.room.name" && e.state_key === "")?.content?.name ?? "__UNNAMED ROOM__";
-                            const roomTopic = state.find(e => e.type === "m.room.topic" && e.state_key === "")?.content?.topic ?? "__NO TOPIC__";
+                            const roomName = state.find(e => e.type === "m.room.name" && e.state_key === "")?.content?.name as string ?? "__UNNAMED ROOM__";
+                            const roomTopic = state.find(e => e.type === "m.room.topic" && e.state_key === "")?.content?.topic as string ?? "__NO TOPIC__";
                             const noticeEventId = await client.sendMessage(safetyTeamRoomId, {
                                 msgtype: "m.notice",
                                 body: `A new application has been submitted by \`${event.sender}\` for the room \`${joinRoomId}\` to join the community "${community.name}" (\`${communityConfig.id}\`). React with ✅ to approve and ❌ to deny.\n\nDetails:\n* Name: ${roomName}\n* Topic: ${roomTopic}`,
@@ -370,5 +369,5 @@ function renderConfigVal(key: keyof CommunityConfig, vals: CommunityConfig, defa
     }
 
     // Ideally we'd use a table, but not all clients support that :(
-    return `<b><code>${name}</code></b>: ${vals[key] != undefined ? `<code>${escapeHtml(vals[key])}</code>` : "use instance default"}<br/>Instance default: ${defaults[key] != undefined ? `<code>${escapeHtml(defaults[key])}</code>` : "not set (disabled)"}<br/><i>${description.description}</i><br/><br/>`;
+    return `<b><code>${name}</code></b>: ${vals[key] != undefined ? `<code>${escapeHtml(`${vals[key]}`)}</code>` : "use instance default"}<br/>Instance default: ${defaults[key] != undefined ? `<code>${escapeHtml(`${defaults[key]}`)}</code>` : "not set (disabled)"}<br/><i>${description.description}</i><br/><br/>`;
 }
