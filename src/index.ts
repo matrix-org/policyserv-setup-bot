@@ -3,7 +3,7 @@ import {
     MatrixAuth,
     MatrixClient,
     MatrixEvent, Permalinks, RustSdkCryptoStorageProvider,
-    SimpleFsStorageProvider, TextualMessageEventContent
+    SimpleFsStorageProvider, SimpleRetryJoinStrategy, TextualMessageEventContent
 } from "@vector-im/matrix-bot-sdk";
 import * as path from "node:path";
 import {CommunityConfig, ConfigDescriptions, PolicyservApi} from "./policyserv_api";
@@ -61,6 +61,7 @@ const userLimiter = new RateLimit(userRateLimitWindowMs, userRateLimitMax);
     // Create the client and attach all of the listeners
     const client = new MatrixClient(homeserverUrl, accessToken, storageProvider, cryptoStorage);
     AutojoinRoomsMixin.setupOnClient(client);
+    client.setJoinStrategy(new SimpleRetryJoinStrategy()); // sometimes we accept invites too quickly, so just retry a bunch
 
     // Ensure we're joined to the safety team room
     await client.joinRoom(safetyTeamRoomId);
