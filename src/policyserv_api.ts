@@ -70,6 +70,7 @@ interface CommunityResponse {
 export interface CommunityConfig {
     keyword_filter_keywords?: string[];
     mention_filter_max_mentions?: number; // whole number, positive to enable
+    mention_filter_min_plaintext_length?: number; // whole number
     many_ats_filter_max_ats?: number; // whole number, positive to enable
     media_filter_media_types?: string[];
     density_filter_max_density?: number; // float, positive to enable
@@ -122,6 +123,11 @@ export const ConfigDescriptions: Record<string /* user-friendly name */, ConfigD
     "max_mentions": {
         property: "mention_filter_max_mentions",
         description: "The maximum number of mentions allowed in a single message. Set to -1 to disable.",
+        transformFn: toNumber,
+    },
+    "min_plaintext_mention_length": {
+        property: "mention_filter_min_plaintext_length",
+        description: "The minimum length a user's display name must be to be considered a mention.",
         transformFn: toNumber,
     },
     "max_ats": {
