@@ -53,6 +53,9 @@ services:
       - POLICYSERV_BASE_URL=https://your_policyserv.example.org
       - POLICYSERV_API_KEY=your_policyserv_api_key_goes_here
       - POLICYSERV_SERVER_NAME=policyserv.example.org
+      # policyserv prints its public event signing key on startup. Look for the line starting
+      # with "Public event key:" and copy the base64 value after "ed25519:policy_server".
+      - POLICYSERV_EVENT_SIGNING_KEY=unpadded_base64_encoded_PUBLIC_key
       - APPEAL_DIRECTIONS=To appeal this decision, please contact abuse@example.org
       - COMMUNITY_RATE_LIMIT_WINDOW_MS=600000
       - COMMUNITY_RATE_LIMIT_MAX=10
