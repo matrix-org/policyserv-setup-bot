@@ -55,6 +55,7 @@ services:
       - POLICYSERV_SERVER_NAME=policyserv.example.org
       # policyserv prints its public event signing key on startup. Look for the line starting
       # with "Public event key:" and copy the base64 value after "ed25519:policy_server".
+      # This is currently optional, but may become required in the future.
       - POLICYSERV_EVENT_SIGNING_KEY=unpadded_base64_encoded_PUBLIC_key
       - APPEAL_DIRECTIONS=To appeal this decision, please contact abuse@example.org
       - COMMUNITY_RATE_LIMIT_WINDOW_MS=600000
