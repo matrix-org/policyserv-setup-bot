@@ -19,6 +19,7 @@ const storagePath = process.env.STORAGE_PATH || "bot";
 const policyservBaseUrl = process.env.POLICYSERV_BASE_URL;
 const policyservApiKey = process.env.POLICYSERV_API_KEY;
 const policyservServerName = process.env.POLICYSERV_SERVER_NAME;
+const policyservEventSigningKey = process.env.POLICYSERV_EVENT_SIGNING_KEY; // optional
 const appealDirections = process.env.APPEAL_DIRECTIONS || "To appeal this decision, please email abuse@matrix.org";
 const communityRateLimitWindowMs = Number(process.env.COMMUNITY_RATE_LIMIT_WINDOW_MS) || 10 * 60 * 1000; // 10min default
 const communityRateLimitMax = Number(process.env.COMMUNITY_RATE_LIMIT_MAX) || 10;
@@ -107,10 +108,13 @@ const userLimiter = new RateLimit(userRateLimitWindowMs, userRateLimitMax);
         } else {
             // Try to set the policy server state event ourselves, but warn the community if it went poorly
             try {
-                await client.sendStateEvent(policyservData["room_id"], "org.matrix.msc4284.policy", "", {
+                const content = {
                     "via": policyservServerName,
-                    // TODO: Also include signing key (if applicable)
-                });
+                };
+                if (!!policyservEventSigningKey) {
+                    content["public_key"] = policyservEventSigningKey;
+                }
+                await client.sendStateEvent(policyservData["room_id"], "org.matrix.msc4284.policy", "", content);
             } catch (e) {
                 console.error(e);
                 await client.sendHtmlNotice(policyservData["community_room_id"], `⚠️ The bot was unable to set the policy server configuration in <code>${escapeHtml(policyservData["room_id"])}</code>. It will have to be done manually. The server name for this room should be <code>${policyservServerName}</code>`);
