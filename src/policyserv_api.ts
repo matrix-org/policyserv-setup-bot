@@ -83,6 +83,7 @@ export interface CommunityConfig {
     hellban_postfilter_minutes?: number; // whole number, positive to enable
     mjolnir_filter_enabled?: boolean;
     spam_threshold?: number; // float
+    sticky_events_filter_allow_sticky_events?: boolean;
 }
 
 export interface ConfigDescription {
@@ -191,6 +192,11 @@ export const ConfigDescriptions: Record<string /* user-friendly name */, ConfigD
     //     description: "How 'spammy' an event must be to be considered spam. Zero is not spammy, one is very spammy.",
     //     transformFn: toNumber,
     // },
+    "allow_sticky_events": {
+        property: "sticky_events_filter_allow_sticky_events",
+        description: "Whether to enable the use of MSC4354-style Sticky Events in rooms.",
+        transformFn: toBoolean,
+    }
 };
 
 interface RoomResponse {
