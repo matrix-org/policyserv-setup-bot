@@ -73,6 +73,11 @@ export interface CommunityConfig {
     mention_filter_min_plaintext_length?: number; // whole number
     many_ats_filter_max_ats?: number; // whole number, positive to enable
     media_filter_media_types?: string[];
+    untrusted_media_filter_media_types?: string[];
+    untrusted_media_filter_use_muninn?: boolean;
+    untrusted_media_filter_use_power_levels?: boolean;
+    untrusted_media_filter_allowed_user_globs?: string[];
+    untrusted_media_filter_denied_user_globs?: string[];
     density_filter_max_density?: number; // float, positive to enable
     density_filter_min_trigger_length?: number; // whole number, positive to enable
     trim_length_filter_max_difference?: number; // float, positive to enable
@@ -83,7 +88,10 @@ export interface CommunityConfig {
     hellban_postfilter_minutes?: number; // whole number, positive to enable
     mjolnir_filter_enabled?: boolean;
     spam_threshold?: number; // float
+    webhook_url?: string;
+    openai_filter_fail_secure?: boolean;
     sticky_events_filter_allow_sticky_events?: boolean;
+    hma_filter_enabled_banks?: string[];
 }
 
 export interface ConfigDescription {
@@ -141,6 +149,31 @@ export const ConfigDescriptions: Record<string /* user-friendly name */, ConfigD
         description: "The event and message types to consider spam. Multiple types can be specified by separating them with commas.",
         transformFn: toArray,
     },
+    "untrusted_media_types": {
+        property: "untrusted_media_filter_media_types",
+        description: "The event and message types to consider spam if the sender is not trusted. Multiple types can be specified by separating them with commas. Trust uses a deny-wins model, where the first trust source to deny a user will cause them to be untrusted. If no trust sources deny the user, then the first to allow them will cause them to be trusted. This filter assumes no trust by default (and therefore denies after all trust sources are consulted).",
+        transformFn: toArray,
+    },
+    "enable_muninn_hall_trust_source": {
+        property: "untrusted_media_filter_use_muninn",
+        description: "Trusts users from servers which are members of Muninn Hall.",
+        transformFn: toBoolean,
+    },
+    "enable_power_levels_trust_source": {
+        property: "untrusted_media_filter_use_power_levels",
+        description: "Trusts users if they have above-default power levels in the room.",
+        transformFn: toBoolean,
+    },
+    "allowed_globs_trust_source": {
+        property: "untrusted_media_filter_allowed_user_globs",
+        description: "The globs of users to trust. Multiple globs can be specified by separating them with commas.",
+        transformFn: toArray,
+    },
+    "denied_globs_trust_source": {
+        property: "untrusted_media_filter_denied_user_globs",
+        description: "The globs of users to explicitly not trust. Multiple globs can be specified by separating them with commas. Overrides any source which trusts a user.",
+        transformFn: toArray,
+    },
     "max_density": {
         property: "density_filter_max_density",
         description: "The maximum ratio of non-whitespace to whitespace characters allowed in a message. Set to -1 to disable.",
@@ -192,11 +225,27 @@ export const ConfigDescriptions: Record<string /* user-friendly name */, ConfigD
     //     description: "How 'spammy' an event must be to be considered spam. Zero is not spammy, one is very spammy.",
     //     transformFn: toNumber,
     // },
+    // Note: we don't currently allow this to be set because we don't have a good way to indicate whether the URL domain is allowed.
+    // "webhook_url": {
+    //     property: "webhook_url",
+    //     description: "The (preferably Hookshot) URL to send notifications of spammy events to. If not set, no notifications will be sent.",
+    // },
+    "fail_secure_for_openai": {
+        property: "openai_filter_fail_secure",
+        description: "If the OpenAI filter is enabled for your community or room, this determines whether it considers an event spam when the filter cannot reach OpenAI. Set to false to allow events to pass during errors.",
+        transformFn: toBoolean,
+    },
     "allow_sticky_events": {
         property: "sticky_events_filter_allow_sticky_events",
         description: "Whether to enable the use of MSC4354-style Sticky Events in rooms.",
         transformFn: toBoolean,
-    }
+    },
+    // Note: we don't currently allow this to be changed because we want to ensure that illegal content is always blocked. We'll need to find a way to make this additive rather than replace the instance's values.
+    // "enabled_hma_banks": {
+    //     property: "hma_filter_enabled_banks",
+    //     description: "If the HMA filter is enabled for your community, these are the bank names to scan media against. Multiple banks can be specified by separating them with commas.",
+    //     transformFn: toArray,
+    // },
 };
 
 interface RoomResponse {
