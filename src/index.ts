@@ -309,7 +309,8 @@ const userLimiter = new RateLimit(userRateLimitWindowMs, userRateLimitMax);
                         const reactionEventId = await client.unstableApis.addReactionToEvent(roomId, event.event_id, "👀");
                         const community = await policyservApi.getCommunity(communityConfig.id);
                         const instanceConfig = await policyservApi.getInstanceCommunityConfig();
-                        let keys = Object.keys(instanceConfig); // we use the instance config to ensure we show all available options to the user
+                        // we use the config description properties to ensure we render everything, including values disabled by the instance.
+                        let keys = Object.values(ConfigDescriptions).map(v => v.property);
                         if (args[0] === "get") {
                             if (!ConfigDescriptions[args[1]]) {
                                 // noinspection ES6MissingAwait - we aren't concerned if this fails
