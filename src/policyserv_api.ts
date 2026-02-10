@@ -69,6 +69,9 @@ interface CommunityResponse {
 
 export interface CommunityConfig {
     keyword_filter_keywords?: string[];
+    keyword_filter_use_full_event?: boolean;
+    keyword_template_filter_template_names?: string[];
+    keyword_template_filter_use_full_event?: boolean;
     mention_filter_max_mentions?: number; // whole number, positive to enable
     mention_filter_min_plaintext_length?: number; // whole number
     many_ats_filter_max_ats?: number; // whole number, positive to enable
@@ -92,6 +95,8 @@ export interface CommunityConfig {
     openai_filter_fail_secure?: boolean;
     sticky_events_filter_allow_sticky_events?: boolean;
     hma_filter_enabled_banks?: string[];
+    link_filter_allowed_url_globs?: string[];
+    link_filter_denied_url_globs?: string[];
 }
 
 export interface ConfigDescription {
@@ -129,6 +134,22 @@ export const ConfigDescriptions: Record<string /* user-friendly name */, ConfigD
         description: "The keywords to cause an event to be marked as spam for. The search will be on the message's content regardless of type. Multiple keywords can be specified by separating them with commas.",
         transformFn: toArray,
     },
+    "keywords_check_full_event": {
+        property: "keyword_filter_use_full_event",
+        description: "When true, check keywords against the full event rather than just its content. Avoid using keywords like `room_id` and `sender` in this mode.",
+        transformFn: toBoolean,
+    },
+    // Note: Keyword templates are disabled because we don't (yet) have a good way to expose which ones exist, and which ones a community can use.
+    // "keyword_templates": {
+    //     property: "keyword_template_filter_template_names",
+    //     description: "The keyword templates to check event contents against. Multiple templates can be specified by separating them with commas.",
+    //     transformFn: toArray,
+    // },
+    // "keyword_templates_check_full_event": {
+    //     property: "keyword_template_filter_use_full_event",
+    //     description: "When true, check keyword templates against the full event rather than just its content. Avoid using templates like `room_id` and `sender` in this mode.",
+    //     transformFn: toBoolean,
+    // },
     "max_mentions": {
         property: "mention_filter_max_mentions",
         description: "The maximum number of mentions allowed in a single message. Set to -1 to disable.",
@@ -246,6 +267,16 @@ export const ConfigDescriptions: Record<string /* user-friendly name */, ConfigD
     //     description: "If the HMA filter is enabled for your community, these are the bank names to scan media against. Multiple banks can be specified by separating them with commas.",
     //     transformFn: toArray,
     // },
+    "allowed_link_globs": {
+        property: "link_filter_allowed_url_globs",
+        description: "The globs of URLs to allow in messages. Multiple globs can be specified by separating them with commas. Example: `https://github.com/*,https://spec.matrix.org/v1.17/*`",
+        transformFn: toArray,
+    },
+    "denied_link_globs": {
+        property: "link_filter_denied_url_globs",
+        description: "The globs of URLs to explicitly not allow in messages. Multiple globs can be specified by separating them with commas. Overrides the allow list of URLs. Example: `*example.org*`",
+        transformFn: toArray,
+    },
 };
 
 interface RoomResponse {
