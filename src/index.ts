@@ -186,8 +186,19 @@ const userLimiter = new RateLimit(userRateLimitWindowMs, userRateLimitMax);
                         "<li><code>!policyserv config</code> - Get the current configuration for the community.</li>" +
                         "<li><code>!policyserv get &lt;config key&gt;</code> - Get a specific configuration value.</li>" +
                         "<li><code>!policyserv set &lt;config key&gt; &lt;value&gt;</code> - Set a configuration value.</li>" +
+                        (roomId === safetyTeamRoomId ? "<li><code>!policserv admin_add &lt;room ID&gt; &lt;community ID&gt;</code> - Point a room ID at the given community ID. Used to restore from data loss." : "") +
                         "</ul>"
                     );
+                } else if (args[0] === "admin_add" && roomId === safetyTeamRoomId) {
+                    if (args.length < 3) {
+                        await client.replyHtmlNotice(roomId, event, "Please specify a room ID and community ID.");
+                        return
+                    }
+
+                    const communityRoomId = args[1];
+                    const communityId = args[2];
+                    storageProvider.storeValue(`room:${communityRoomId}`, JSON.stringify({id: communityId}));
+                    await client.unstableApis.addReactionToEvent(roomId, event.event_id, "✅");
                 } else if (args[0] === "community") {
                     if (!!storageProvider.readValue(`room:${roomId}`)) {
                         await client.replyHtmlNotice(roomId, event, "❌ This room is already associated with a community.");
