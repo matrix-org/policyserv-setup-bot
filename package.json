@@ -1,6 +1,6 @@
 {
   "name": "policyserv-setup-bot",
-  "version": "0.0.1",
+  "version": "0.0.5",
   "description": "Bot for setting up policyserv",
   "homepage": "https://github.com/matrix-org/policyserv-setup-bot#readme",
   "bugs": {
