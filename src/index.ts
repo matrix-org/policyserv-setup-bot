@@ -2,7 +2,7 @@ import {
     AutojoinRoomsMixin,
     MatrixAuth,
     MatrixClient,
-    MatrixEvent, Permalinks, RustSdkCryptoStorageProvider,
+    MatrixEvent, MatrixGlob, Permalinks, RustSdkCryptoStorageProvider,
     SimpleFsStorageProvider, SimpleRetryJoinStrategy, TextualMessageEventContent
 } from "@vector-im/matrix-bot-sdk";
 import * as path from "node:path";
@@ -26,7 +26,7 @@ const communityRateLimitMax = Number(process.env.COMMUNITY_RATE_LIMIT_MAX) || 10
 const userRateLimitWindowMs = Number(process.env.USER_RATE_LIMIT_WINDOW_MS) || 10 * 60 * 1000; // 10min default
 const userRateLimitMax = Number(process.env.USER_RATE_LIMIT_MAX) || 10;
 const healthzBind = process.env.HEALTHZ_BIND || "0.0.0.0:8080";
-const inviteAcceptUserIds = (process.env.INVITE_ACCEPT_USER_IDS || "").split(",").map(u => u.trim()).filter(u => u.length > 0);
+const inviteAcceptUserIdGlobs = (process.env.INVITE_ACCEPT_USER_ID_GLOBS || "").split(",").map(u => u.trim()).filter(u => u.length > 0).map(u => new MatrixGlob(u));
 const inviteRejectMessage = process.env.INVITE_REJECT_MESSAGE || "Contact the bot admin to use this bot.";
 
 function requireVariable(v: string | undefined, name: string): void {
@@ -63,9 +63,9 @@ const userLimiter = new RateLimit(userRateLimitWindowMs, userRateLimitMax);
 
     // Create the client and attach all of the listeners
     const client = new MatrixClient(homeserverUrl, accessToken, storageProvider, cryptoStorage);
-    if (inviteAcceptUserIds.length > 0) {
+    if (inviteAcceptUserIdGlobs.length > 0) {
         client.on("room.invite", async (roomId: string, event: MatrixEvent) => {
-            if (inviteAcceptUserIds.includes(event.sender)) {
+            if (inviteAcceptUserIdGlobs.find(g => g.test(event.sender))) {
                 await client.joinRoom(roomId);
             } else {
                 console.log(`Received invite from ${event.sender} to ${roomId} but they aren't allowed to invite the bot. The invite has been rejected.`);
