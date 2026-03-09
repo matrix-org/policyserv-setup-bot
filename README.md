@@ -63,6 +63,14 @@ services:
       - USER_RATE_LIMIT_WINDOW_MS=600000
       - USER_RATE_LIMIT_MAX=10
       - HEALTHZ_BIND=0.0.0.0:8080
+
+      # To make the bot private, enable these options. The bot will only accept invites from
+      # the users specified in INVITE_ACCEPT_USER_IDS. Rejections will use the INVITE_REJECT_MESSAGE.
+      # If no INVITE_ACCEPT_USER_IDS is specified, the bot will accept invites from anyone.
+      # Globs are supported, as shown in the example below.
+      #
+      #- INVITE_ACCEPT_USER_ID_GLOBS=@you:example.org,@*:example.org 
+      #- INVITE_REJECT_MESSAGE=Contact the bot admin to use this bot. 
     volumes:
       - ./data:/data
 ```

@@ -2,7 +2,7 @@ import {
     AutojoinRoomsMixin,
     MatrixAuth,
     MatrixClient,
-    MatrixEvent, Permalinks, RustSdkCryptoStorageProvider,
+    MatrixEvent, MatrixGlob, Permalinks, RustSdkCryptoStorageProvider,
     SimpleFsStorageProvider, SimpleRetryJoinStrategy, TextualMessageEventContent
 } from "@vector-im/matrix-bot-sdk";
 import * as path from "node:path";
@@ -26,6 +26,8 @@ const communityRateLimitMax = Number(process.env.COMMUNITY_RATE_LIMIT_MAX) || 10
 const userRateLimitWindowMs = Number(process.env.USER_RATE_LIMIT_WINDOW_MS) || 10 * 60 * 1000; // 10min default
 const userRateLimitMax = Number(process.env.USER_RATE_LIMIT_MAX) || 10;
 const healthzBind = process.env.HEALTHZ_BIND || "0.0.0.0:8080";
+const inviteAcceptUserIdGlobs = (process.env.INVITE_ACCEPT_USER_ID_GLOBS || "").split(",").map(u => u.trim()).filter(u => u.length > 0).map(u => new MatrixGlob(u));
+const inviteRejectMessage = process.env.INVITE_REJECT_MESSAGE || "Contact the bot admin to use this bot.";
 
 function requireVariable(v: string | undefined, name: string): void {
     if (!v) {
@@ -61,7 +63,18 @@ const userLimiter = new RateLimit(userRateLimitWindowMs, userRateLimitMax);
 
     // Create the client and attach all of the listeners
     const client = new MatrixClient(homeserverUrl, accessToken, storageProvider, cryptoStorage);
-    AutojoinRoomsMixin.setupOnClient(client);
+    if (inviteAcceptUserIdGlobs.length > 0) {
+        client.on("room.invite", async (roomId: string, event: MatrixEvent) => {
+            if (inviteAcceptUserIdGlobs.find(g => g.test(event.sender))) {
+                await client.joinRoom(roomId);
+            } else {
+                console.log(`Received invite from ${event.sender} to ${roomId} but they aren't allowed to invite the bot. The invite has been rejected.`);
+                await client.leaveRoom(roomId, inviteRejectMessage); // leaving when invited is rejection
+            }
+        });
+    } else {
+        AutojoinRoomsMixin.setupOnClient(client);
+    }
     client.setJoinStrategy(new SimpleRetryJoinStrategy()); // sometimes we accept invites too quickly, so just retry a bunch
 
     // Ensure we're joined to the safety team room
