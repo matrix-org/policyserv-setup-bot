@@ -17,19 +17,19 @@ updates:
       default-days: 14 # minimize supply chain attacks by waiting a bit
     labels:
       - dependencies
-  - package-ecosystem: gomod
+  - package-ecosystem: "npm"
     directory: "/"
     schedule:
-      interval: weekly
-    open-pull-requests-limit: 10
+      interval: "weekly"
     groups:
       minor-and-patches:
         applies-to: version-updates
-        patterns: ["*"]
+        patterns:
+          - "*"
         update-types:
-          - minor
-          - patch
+          - "minor"
+          - "patch"
     cooldown:
-      default-days: 14  # minimize supply chain attacks by waiting a bit
+      default-days: 14 # minimize supply chain attacks by waiting a bit
     labels:
       - dependencies
