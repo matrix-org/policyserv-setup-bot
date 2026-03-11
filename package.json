@@ -20,7 +20,7 @@
   "devDependencies": {
     "@types/escape-html": "^1.0.4",
     "@types/node": "^24.6.2",
-    "tsx": "^4.20.6"
+    "tsx": "^4.21.0"
   },
   "dependencies": {
     "@vector-im/matrix-bot-sdk": "^0.8.0-element.3",
