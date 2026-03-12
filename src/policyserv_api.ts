@@ -110,7 +110,7 @@ export interface ConfigDescription {
     transformFn?: (val: string) => CommunityConfig[keyof CommunityConfig];
 }
 
-function toArray(val: string): string[] {
+export function toArray(val: string): string[] {
     return val.split(",").map(s => s.trim());
 }
 

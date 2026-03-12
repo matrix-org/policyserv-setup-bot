@@ -2,11 +2,16 @@ import {
     AutojoinRoomsMixin,
     MatrixAuth,
     MatrixClient,
-    MatrixEvent, MatrixGlob, Permalinks, RustSdkCryptoStorageProvider,
-    SimpleFsStorageProvider, SimpleRetryJoinStrategy, TextualMessageEventContent
+    MatrixEvent,
+    MatrixGlob,
+    Permalinks,
+    RustSdkCryptoStorageProvider,
+    SimpleFsStorageProvider,
+    SimpleRetryJoinStrategy,
+    TextualMessageEventContent
 } from "@vector-im/matrix-bot-sdk";
 import * as path from "node:path";
-import {CommunityConfig, ConfigDescriptions, PolicyservApi} from "./policyserv_api";
+import {CommunityConfig, ConfigDescriptions, PolicyservApi, toArray} from "./policyserv_api";
 import {RateLimit} from "./rate_limit";
 import escapeHtml from "escape-html";
 import * as http from "node:http";
@@ -207,6 +212,8 @@ const userLimiter = new RateLimit(userRateLimitWindowMs, userRateLimitMax);
                         "<li><code>!policyserv config</code> - Get the current configuration for the community.</li>" +
                         "<li><code>!policyserv get &lt;config key&gt;</code> - Get a specific configuration value.</li>" +
                         "<li><code>!policyserv set &lt;config key&gt; &lt;value&gt;</code> - Set a configuration value.</li>" +
+                        "<li><code>!policyserv add &lt;config key&gt; &lt;value&gt;</code> - Add to a list of values in the configuration.</li>" +
+                        "<li><code>!policyserv remove &lt;config key&gt; &lt;value&gt;</code> - Remove from a list of values in the configuration.</li>" +
                         (roomId === safetyTeamRoomId ? "<li><code>!policserv admin_add &lt;room ID&gt; &lt;community ID&gt;</code> - Point a room ID at the given community ID. Used to restore from data loss." : "") +
                         "</ul>"
                     );
@@ -359,7 +366,7 @@ const userLimiter = new RateLimit(userRateLimitWindowMs, userRateLimitMax);
                         // noinspection ES6MissingAwait - we aren't concerned if this fails
                         client.redactEvent(roomId, reactionEventId);
                         await client.replyHtmlNotice(roomId, event, html);
-                    } else if (args[0] === "set") {
+                    } else if (args[0] === "set" || args[0] === "add" || args[0] === "remove") {
                         const key = args[1];
                         let val: any = args.slice(2).join(" ");
                         const desc = ConfigDescriptions[key];
@@ -369,12 +376,28 @@ const userLimiter = new RateLimit(userRateLimitWindowMs, userRateLimitMax);
                         }
                         const reactionEventId = await client.unstableApis.addReactionToEvent(roomId, event.event_id, "👀");
                         try {
+                            if (args[0] !== "set" && desc.transformFn !== toArray) {
+                                await client.replyHtmlNotice(roomId, event, "❌ Can't add or remove from a non-list. Say <code>!policyserv config</code> for a list of available keys and their values.");
+                                return;
+                            }
                             if (!!desc.transformFn) {
                                 val = desc.transformFn(val);
                             }
                             const currentConfig = (await policyservApi.getCommunity(communityConfig.id)).config;
-                            // @ts-ignore - TS doesn't know that the key exists
-                            currentConfig[desc.property] = val;
+                            if (args[0] === "set") {
+                                // @ts-ignore - TS doesn't know that the key exists
+                                currentConfig[desc.property] = val;
+                            } else {
+                                const instanceConfig = await policyservApi.getInstanceCommunityConfig();
+                                const currentValue = currentConfig[desc.property] || instanceConfig[desc.property] || [];
+                                if (args[0] === "add") {
+                                    // @ts-ignore - TS doesn't know that the key exists
+                                    currentConfig[desc.property] = [...currentValue, ...val];
+                                } else { // remove
+                                    // @ts-ignore - TS doesn't know that the key exists
+                                    currentConfig[desc.property] = (currentValue as string[]).filter(v => !val.includes(v));
+                                }
+                            }
                             await policyservApi.setCommunityConfig(communityConfig.id, currentConfig)
                         } catch (e) {
                             console.error(e);
