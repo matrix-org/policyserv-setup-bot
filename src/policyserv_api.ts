@@ -87,6 +87,8 @@ export interface CommunityConfig {
     density_filter_min_trigger_length?: number; // whole number, positive to enable
     trim_length_filter_max_difference?: number; // float, positive to enable
     length_filter_max_length?: number; // whole number, positive to enable
+    user_id_length_filter_max_length?: number; // whole number, positive to enable
+    user_id_contains_words_filter_max_words?: number; // whole number, positive to enable
     sender_prefilter_allowed_senders?: string[];
     event_type_prefilter_allowed_event_types?: string[];
     event_type_prefilter_allowed_state_event_types?: string[];
@@ -238,6 +240,16 @@ export const ConfigDescriptions: Record<string /* user-friendly name */, ConfigD
     "max_length": {
         property: "length_filter_max_length",
         description: "The maximum length an event can be when serialized in its federation (PDU) format. Set to -1 to disable.",
+        transformFn: toNumber,
+    },
+    "max_sender_length": {
+        property: "user_id_length_filter_max_length",
+        description: "The maximum length of a user ID sending an event. Set to -1 or 0 to disable.",
+        transformFn: toNumber,
+    },
+    "max_words_in_sender_localpart": {
+        property: "user_id_contains_words_filter_max_words",
+        description: "The maximum number of words allowed in a user ID's localpart when sending an event. Words are delimited by non-alphanumeric characters. Zero length words are not counted. Set to -1 or 0 to disable.",
         transformFn: toNumber,
     },
     "allowed_senders": {
