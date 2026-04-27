@@ -19,7 +19,7 @@
   },
   "devDependencies": {
     "@types/escape-html": "^1.0.4",
-    "@types/node": "^25.5.0",
+    "@types/node": "^25.5.2",
     "tsx": "^4.21.0"
   },
   "dependencies": {
