@@ -23,7 +23,7 @@
     "tsx": "^4.21.0"
   },
   "dependencies": {
-    "@vector-im/matrix-bot-sdk": "^0.8.0-element.3",
+    "@vector-im/matrix-bot-sdk": "^0.9.0-element.0",
     "escape-html": "^1.0.3"
   }
 }
