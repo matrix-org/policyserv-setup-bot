@@ -214,7 +214,8 @@ const userLimiter = new RateLimit(userRateLimitWindowMs, userRateLimitMax);
                         "<li><code>!policyserv set &lt;config key&gt; &lt;value&gt;</code> - Set a configuration value.</li>" +
                         "<li><code>!policyserv add &lt;config key&gt; &lt;value&gt;</code> - Add to a list of values in the configuration.</li>" +
                         "<li><code>!policyserv remove &lt;config key&gt; &lt;value&gt;</code> - Remove from a list of values in the configuration.</li>" +
-                        (roomId === safetyTeamRoomId ? "<li><code>!policserv admin_add &lt;room ID&gt; &lt;community ID&gt;</code> - Point a room ID at the given community ID. Used to restore from data loss." : "") +
+                        (roomId === safetyTeamRoomId ? "<li><code>!policyserv admin_add &lt;room ID&gt; &lt;community ID&gt;</code> - Point a room ID at the given community ID. Used to restore from data loss." : "") +
+                        (roomId === safetyTeamRoomId ? `<li><code>!policyserv admin_update_keys</code> - Updates all joined rooms using ${policyservServerName} as their policy server to use the currently configured key (<code>${policyservEventSigningKey}</code>)` : "") +
                         "</ul>"
                     );
                 } else if (args[0] === "admin_add" && roomId === safetyTeamRoomId) {
@@ -227,6 +228,30 @@ const userLimiter = new RateLimit(userRateLimitWindowMs, userRateLimitMax);
                     const communityId = args[2];
                     storageProvider.storeValue(`room:${communityRoomId}`, JSON.stringify({id: communityId}));
                     await client.unstableApis.addReactionToEvent(roomId, event.event_id, "✅");
+                } else if (args[0] === "admin_update_keys" && roomId === safetyTeamRoomId) {
+                    const rooms = await client.getJoinedRooms();
+                    let errored = false;
+                    for (const inRoomId of rooms) {
+                        try {
+                            const currentPolicy = await client.getRoomStateEventContent(inRoomId, "m.room.policy", "");
+                            if (currentPolicy["via"] === policyservServerName) {
+                                console.log(`Updating policy server key in ${inRoomId}`);
+                                await client.sendHtmlNotice(roomId, `Updating policy server key in <code>${inRoomId}</code> (<a href="https://matrix.to/#/${inRoomId}">${inRoomId}</a>)`);
+                                await client.sendStateEvent(inRoomId, "m.room.policy", "", {
+                                    "via": policyservServerName,
+                                    "public_keys": {"ed25519": policyservEventSigningKey},
+                                });
+                            }
+                        } catch (e) {
+                            if (e.statusCode !== 404) {
+                                console.error(e);
+                                await client.replyNotice(roomId, event, `❌ Error updating ${inRoomId} - ${e.message}`);
+                                errored = true;
+                                break;
+                            } // else it's a 404 so the state event probably just doesn't exist
+                        }
+                    }
+                    if (!errored) await client.unstableApis.addReactionToEvent(roomId, event.event_id, "✅");
                 } else if (args[0] === "community") {
                     if (!!storageProvider.readValue(`room:${roomId}`)) {
                         await client.replyHtmlNotice(roomId, event, "❌ This room is already associated with a community.");
