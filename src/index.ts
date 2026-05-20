@@ -24,7 +24,7 @@ const storagePath = process.env.STORAGE_PATH || "bot";
 const policyservBaseUrl = process.env.POLICYSERV_BASE_URL;
 const policyservApiKey = process.env.POLICYSERV_API_KEY;
 const policyservServerName = process.env.POLICYSERV_SERVER_NAME;
-const policyservEventSigningKey = process.env.POLICYSERV_EVENT_SIGNING_KEY; // optional
+const policyservEventSigningKey = process.env.POLICYSERV_EVENT_SIGNING_KEY;
 const appealDirections = process.env.APPEAL_DIRECTIONS || "To appeal this decision, please email abuse@matrix.org";
 const communityRateLimitWindowMs = Number(process.env.COMMUNITY_RATE_LIMIT_WINDOW_MS) || 10 * 60 * 1000; // 10min default
 const communityRateLimitMax = Number(process.env.COMMUNITY_RATE_LIMIT_MAX) || 10;
@@ -48,6 +48,7 @@ requireVariable(safetyTeamRoomId, "SAFETY_TEAM_ROOM_ID");
 requireVariable(policyservBaseUrl, "POLICYSERV_BASE_URL");
 requireVariable(policyservApiKey, "POLICYSERV_API_KEY");
 requireVariable(policyservServerName, "POLICYSERV_SERVER_NAME");
+requireVariable(policyservEventSigningKey, "POLICYSERV_EVENT_SIGNING_KEY");
 
 const policyservApi = new PolicyservApi(policyservBaseUrl, policyservApiKey);
 
@@ -130,12 +131,14 @@ const userLimiter = new RateLimit(userRateLimitWindowMs, userRateLimitMax);
                     "via": policyservServerName,
                 };
                 // TODO: Remove unstable and just use `content` instead - https://github.com/matrix-org/policyserv-setup-bot/issues/18
-                const unstableContent = {...content};
-                const stableContent = {...content};
-                if (!!policyservEventSigningKey) {
-                    unstableContent["public_key"] = policyservEventSigningKey;
-                    stableContent["public_keys"] = {"ed25519": policyservEventSigningKey};
-                }
+                const unstableContent = {
+                    ...content,
+                    "public_key": policyservEventSigningKey,
+                };
+                const stableContent = {
+                    ...content,
+                    "public_keys": {"ed25519": policyservEventSigningKey},
+                };
 
                 // Set both unstable and stable.
                 // TODO: Remove unstable - https://github.com/matrix-org/policyserv-setup-bot/issues/18
