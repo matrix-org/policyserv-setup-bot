@@ -247,7 +247,7 @@ const userLimiter = new RateLimit(userRateLimitWindowMs, userRateLimitMax);
                                 console.error(e);
                                 await client.replyNotice(roomId, event, `❌ Error updating ${inRoomId} - ${e.message}`);
                                 errored = true;
-                                break;
+                                break; // the error is probably unrecoverable (timeout, etc), so bail instead of hitting it a bunch of times
                             } // else it's a 404 so the state event probably just doesn't exist
                         }
                     }
