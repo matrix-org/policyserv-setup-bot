@@ -104,6 +104,7 @@ export interface CommunityConfig {
     unsafe_signing_key_filter_enabled?: boolean;
     frequency_filter_event_types?: string[];
     frequency_filter_rate_limit?: number; // float, positive to enable
+    inline_emoji_size_filter_max_height_pixels?: number; // whole number, positive to enable
 }
 
 export interface ConfigDescription {
@@ -201,6 +202,11 @@ export const ConfigDescriptions: Record<string /* user-friendly name */, ConfigD
         property: "untrusted_media_filter_media_types",
         description: "The event and message types to consider spam if the sender is not trusted. Multiple types can be specified by separating them with commas. Trust uses a deny-wins model, where the first trust source to deny a user will cause them to be untrusted. If no trust sources deny the user, then the first to allow them will cause them to be trusted. This filter assumes no trust by default (and therefore denies after all trust sources are consulted).",
         transformFn: toArray,
+    },
+    "max_inline_emoji_height_pixels": {
+        property: "inline_emoji_size_filter_max_height_pixels",
+        description: "The maximum height an inline emoji in a message can be. Note that enabling this filter will disable non-emoji inline images. Set to -1 to disable this filter.",
+        transformFn: toNumber,
     },
     "enable_muninn_hall_trust_source": {
         property: "untrusted_media_filter_use_muninn",
