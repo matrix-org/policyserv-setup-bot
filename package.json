@@ -19,8 +19,8 @@
   },
   "devDependencies": {
     "@types/escape-html": "^1.0.4",
-    "@types/node": "^26.6.1",
-    "tsx": "^4.23.13"
+    "@types/node": "^26.6.2",
+    "tsx": "^4.23.15"
   },
   "dependencies": {
     "@vector-im/matrix-bot-sdk": "^0.10.0-element.0",
